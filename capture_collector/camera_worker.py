@@ -9,6 +9,7 @@ from threading import Event
 from typing import Callable
 
 from .config import CameraConfig, CollectorConfig
+from .schedule import wait_until_active
 
 logger = logging.getLogger(__name__)
 
@@ -92,6 +93,8 @@ def run_camera_worker(
     log = logging.getLogger(f"camera.{camera.id}")
 
     while not stop.is_set():
+        if not wait_until_active(cfg.active_hours, stop, log=log):
+            break
         try:
             when = _utc_now()
             jpeg = capture_jpeg(

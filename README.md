@@ -35,6 +35,20 @@ python -m capture_collector --once --camera-id test --rtsp "C:\path\to\sample.mp
 2. Set RTSP URLs via environment variables (see example `${RTSP_CAM_PLAYGROUND}`).
 3. Create spool directory: `sudo mkdir -p /var/lib/eurokids-capture/spool`
 
+### Active hours (optional)
+
+Capture only between a daily start/end time (process stays running; cameras sleep outside the window):
+
+```yaml
+active_hours:
+  start: "05:00"
+  end: "20:00"
+  timezone: Asia/Kolkata
+```
+
+Or shorthand: `active_hours: "05:00-20:00"` with optional `active_hours_timezone: Asia/Kolkata`.
+Omit `active_hours` to run 24/7. `--once` tests ignore the schedule.
+
 ## Run on Linux (5 cameras)
 
 ```bash

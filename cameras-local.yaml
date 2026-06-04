@@ -8,6 +8,10 @@ key_prefix: raw
 rtsp_transport: tcp
 ffmpeg_timeout_sec: 15
 
+# Uncomment to test scheduling (MediaMTX can run 24/7; capture only in window):
+# active_hours: "05:00-20:00"
+# active_hours_timezone: Asia/Kolkata
+
 cameras:
   - id: cam1
     name: cam1

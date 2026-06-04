@@ -46,13 +46,21 @@ def _run_collector(cfg: CollectorConfig) -> int:
     signal.signal(signal.SIGTERM, handle_signal)
 
     cfg.spool_dir.mkdir(parents=True, exist_ok=True)
+    ah = cfg.active_hours
+    ah_msg = (
+        f"{ah.label} ({ah.timezone or 'local'})"
+        if ah
+        else "always"
+    )
     logger.info(
-        "starting site=%s cameras=%d interval=%ss spool=%s bucket=%s dry_run=%s",
+        "starting site=%s cameras=%d interval=%ss spool=%s bucket=%s "
+        "active_hours=%s dry_run=%s",
         cfg.site_id,
         len(cfg.cameras),
         cfg.sample_interval_sec,
         cfg.spool_dir,
         cfg.bucket or "(none)",
+        ah_msg,
         cfg.dry_run,
     )
 

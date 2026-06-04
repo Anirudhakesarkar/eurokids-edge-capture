@@ -8,6 +8,8 @@ from typing import Any
 
 import yaml
 
+from .schedule import ActiveHours, parse_active_hours
+
 _ENV_PATTERN = re.compile(r"\$\{([A-Z0-9_]+)\}")
 
 
@@ -50,6 +52,7 @@ class CollectorConfig:
     ffmpeg_timeout_sec: int
     cameras: list[CameraConfig]
     dry_run: bool = False
+    active_hours: ActiveHours | None = None
 
 
 def load_config(path: Path, *, dry_run: bool = False) -> CollectorConfig:
@@ -79,6 +82,8 @@ def load_config(path: Path, *, dry_run: bool = False) -> CollectorConfig:
         )
 
     spool = Path(str(raw.get("spool_dir") or "./spool")).expanduser()
+    default_tz = str(raw.get("active_hours_timezone") or "").strip() or None
+    active_hours = parse_active_hours(raw.get("active_hours"), default_tz=default_tz)
 
     return CollectorConfig(
         site_id=str(raw.get("site_id") or "site-unknown").strip(),
@@ -91,6 +96,7 @@ def load_config(path: Path, *, dry_run: bool = False) -> CollectorConfig:
         ffmpeg_timeout_sec=int(raw.get("ffmpeg_timeout_sec") or 15),
         cameras=cameras,
         dry_run=dry_run,
+        active_hours=active_hours,
     )
 
 

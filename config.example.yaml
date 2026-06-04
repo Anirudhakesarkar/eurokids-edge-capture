@@ -14,6 +14,15 @@ key_prefix: raw
 rtsp_transport: tcp
 ffmpeg_timeout_sec: 15
 
+# Optional: only capture between these times (school hours).
+# Uses timezone below, or system local time if omitted.
+active_hours:
+  start: "05:00"
+  end: "20:00"
+  timezone: Asia/Kolkata
+# Shorthand: active_hours: "05:00-20:00"
+# active_hours_timezone: Asia/Kolkata
+
 cameras:
   - id: cam-playground
     name: playground
