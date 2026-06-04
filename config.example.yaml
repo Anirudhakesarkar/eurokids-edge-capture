@@ -1,0 +1,32 @@
+# Copy to cameras.yaml on the Linux server (e.g. /etc/eurokids/cameras.yaml).
+# RTSP URLs with secrets: use env vars like ${RTSP_CAM_01} in YAML values.
+
+site_id: eurokids-mulund
+sample_interval_sec: 60
+jpeg_quality: 2
+spool_dir: /var/lib/eurokids-capture/spool
+
+# S3 or Cloudflare R2 (R2: set endpoint_url in env AWS_ENDPOINT_URL)
+bucket: eurokids-poc
+key_prefix: raw
+
+# FFmpeg / RTSP
+rtsp_transport: tcp
+ffmpeg_timeout_sec: 15
+
+cameras:
+  - id: cam-playground
+    name: playground
+    rtsp_url: ${RTSP_CAM_PLAYGROUND}
+  - id: cam-corridor-1
+    name: corridor-1
+    rtsp_url: ${RTSP_CAM_CORRIDOR_1}
+  - id: cam-corridor-2
+    name: corridor-2
+    rtsp_url: ${RTSP_CAM_CORRIDOR_2}
+  - id: cam-entrance
+    name: entrance
+    rtsp_url: ${RTSP_CAM_ENTRANCE}
+  - id: cam-pantry
+    name: pantry
+    rtsp_url: ${RTSP_CAM_PANTRY}

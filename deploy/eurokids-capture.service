@@ -1,0 +1,20 @@
+[Unit]
+Description=Eurokids RTSP frame collector (S3/R2)
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=eurokids
+Group=eurokids
+WorkingDirectory=/opt/eurokids/capture
+EnvironmentFile=/etc/eurokids/capture.env
+ExecStart=/opt/eurokids/capture/venv/bin/python -m capture_collector --config /etc/eurokids/cameras.yaml
+Restart=on-failure
+RestartSec=10
+
+# Spool + logs
+ReadWritePaths=/var/lib/eurokids-capture
+
+[Install]
+WantedBy=multi-user.target

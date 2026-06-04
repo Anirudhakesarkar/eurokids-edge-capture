@@ -1,0 +1,14 @@
+# Local test: MediaMTX on localhost (10 min runs, etc.)
+site_id: test-site
+sample_interval_sec: 60
+jpeg_quality: 2
+spool_dir: ./spool
+bucket: ""
+key_prefix: raw
+rtsp_transport: tcp
+ffmpeg_timeout_sec: 15
+
+cameras:
+  - id: cam1
+    name: cam1
+    rtsp_url: rtsp://localhost:8554/cam1
