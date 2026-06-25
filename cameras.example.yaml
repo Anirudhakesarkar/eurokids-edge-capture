@@ -1,0 +1,39 @@
+# Copy to cameras.yaml on the edge server (not committed — see .gitignore).
+# Password in URL uses %40 for @ (Uss@0008 → Uss%400008).
+
+site_id: eurokids-mulund
+sample_interval_sec: 60
+jpeg_quality: 2
+spool_dir: /var/lib/eurokids-capture/spool
+bucket: orionalerts
+key_prefix: raw
+rtsp_transport: tcp
+ffmpeg_timeout_sec: 15
+
+# Default for cameras that do not set always_on or their own active_hours.
+active_hours:
+  start: "06:30"
+  end: "17:00"
+  timezone: Asia/Kolkata
+
+cameras:
+  - id: cam-main-gate
+    name: Main Gate
+    rtsp_url: "rtsp://admin:Uss%400008@192.169.169.61:554/cam/realmonitor?channel=1&subtype=0"
+    always_on: true
+
+  - id: cam-staircase
+    name: Staircase
+    rtsp_url: "rtsp://admin:Uss%400008@192.169.168.147:554/cam/realmonitor?channel=1&subtype=0"
+
+  - id: cam-passage
+    name: Passage area
+    rtsp_url: "rtsp://admin:Uss%400008@192.169.168.153:554/cam/realmonitor?channel=1&subtype=0"
+
+  - id: cam-grade-8a
+    name: Grade 8A
+    rtsp_url: "rtsp://admin:Uss%400008@192.169.168.108:554/cam/realmonitor?channel=1&subtype=0"
+
+  - id: cam-psy4
+    name: Psy4
+    rtsp_url: "rtsp://admin:Uss%400008@192.169.168.166:554/cam/realmonitor?channel=1&subtype=0"

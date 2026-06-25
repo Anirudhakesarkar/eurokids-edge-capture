@@ -1,105 +1,80 @@
 # Eurokids Edge Capture
 
-Standalone Linux service: pull RTSP from school cameras, sample JPEGs (~1/min), upload to **AWS S3** or **Cloudflare R2**.
-
-Not part of the VMS desktop app. Copy this folder to the POC edge server.
+Standalone Linux service: pull RTSP from school cameras, sample JPEGs (~1/min), upload to **Cloudflare R2**.
 
 ## Requirements
 
 - Python 3.10+
 - **FFmpeg** on `PATH` (`sudo apt install ffmpeg`)
-- Network: RTSP to cameras + HTTPS to S3/R2
+- Network: RTSP to cameras + HTTPS to R2
 
-## Quick start (office / Windows dev)
-
-```powershell
-cd d:\eurokids-edge-capture
-python -m venv .venv
-.\.venv\Scripts\activate
-pip install -r requirements.txt
-
-# Local capture only (no upload)
-python -m capture_collector --once --camera-id test --rtsp "C:\path\to\sample.mp4" --dry-run
-
-# One frame + S3 upload (set env first)
-$env:AWS_ACCESS_KEY_ID="..."
-$env:AWS_SECRET_ACCESS_KEY="..."
-$env:AWS_DEFAULT_REGION="ap-south-1"
-$env:EUROKIDS_S3_BUCKET="eurokids-poc"
-python -m capture_collector --once --camera-id test --rtsp "C:\path\to\sample.mp4" --site-id test-site
-```
-
-## Config
-
-1. Copy `config.example.yaml` → `/etc/eurokids/cameras.yaml` on the server.
-2. Set RTSP URLs via environment variables (see example `${RTSP_CAM_PLAYGROUND}`).
-3. Create spool directory: `sudo mkdir -p /var/lib/eurokids-capture/spool`
-
-### Active hours (optional)
-
-Capture only between a daily start/end time (process stays running; cameras sleep outside the window):
-
-```yaml
-active_hours:
-  start: "05:00"
-  end: "20:00"
-  timezone: Asia/Kolkata
-```
-
-Or shorthand: `active_hours: "05:00-20:00"` with optional `active_hours_timezone: Asia/Kolkata`.
-Omit `active_hours` to run 24/7. `--once` tests ignore the schedule.
-
-## Run on Linux (5 cameras)
+## Setup (edge server)
 
 ```bash
-cd /opt/eurokids/capture
+git clone https://github.com/Anirudhakesarkar/eurokids-edge-capture.git
+cd eurokids-edge-capture
 python3 -m venv venv
 source venv/bin/activate
 pip install -r requirements.txt
 
-export AWS_ACCESS_KEY_ID=...
-export AWS_SECRET_ACCESS_KEY=...
-export AWS_DEFAULT_REGION=ap-south-1
-export EUROKIDS_S3_BUCKET=eurokids-poc
-# R2 only:
-# export AWS_ENDPOINT_URL=https://<accountid>.r2.cloudflarestorage.com
+cp cameras.example.yaml cameras.yaml
+cp .env.example .env
+# Edit .env with R2 keys; edit cameras.yaml if needed
 
-export RTSP_CAM_PLAYGROUND="rtsp://user:pass@192.168.1.101/..."
-# ... other cameras
-
-python -m capture_collector --config /etc/eurokids/cameras.yaml
+sudo mkdir -p /var/lib/eurokids-capture/spool
 ```
 
-Object keys:
+## Run
 
-```text
-s3://{bucket}/raw/{site_id}/{camera_id}/{YYYY-MM-DD}/{timestamp}.jpg
+```bash
+source venv/bin/activate
+set -a && source .env && set +a
+
+# Test one frame
+python -m capture_collector --once \
+  --camera-id cam-main-gate \
+  --rtsp "rtsp://..." \
+  --site-id eurokids-mulund -v
+
+# Continuous (5 cameras)
+python -m capture_collector --config cameras.yaml -v
 ```
+
+## Schedule
+
+Configured in `cameras.yaml`:
+
+- **Main Gate** — `always_on: true` (24/7)
+- **Other cameras** — `active_hours` 06:30–17:00 Asia/Kolkata (every day)
+
+Process can run 24/7 via systemd; cameras sleep outside their window automatically.
 
 ## systemd
 
-See `deploy/eurokids-capture.service`. Install:
-
 ```bash
 sudo cp deploy/eurokids-capture.service /etc/systemd/system/
+sudo cp cameras.yaml /etc/eurokids/cameras.yaml
+sudo cp .env /etc/eurokids/capture.env
+sudo chmod 600 /etc/eurokids/capture.env
 sudo systemctl daemon-reload
 sudo systemctl enable --now eurokids-capture
 sudo journalctl -u eurokids-capture -f
 ```
 
-## Architecture
+## R2 object layout
 
-- **One process**, one thread per camera (RTSP + FFmpeg snapshot).
-- **Shared upload queue** (2 worker threads) so slow S3 does not block capture.
-- On RTSP failure: log, exponential backoff, retry.
+```text
+orionalerts/raw/{site_id}/{camera_id}/{YYYY-MM-DD}/{timestamp}.jpg
+```
+
+Local spool files are deleted after successful upload.
 
 ## Env reference
 
 | Variable | Purpose |
 |----------|---------|
-| `AWS_ACCESS_KEY_ID` / `AWS_SECRET_ACCESS_KEY` | S3 or R2 API keys |
-| `AWS_DEFAULT_REGION` | e.g. `ap-south-1` |
-| `AWS_ENDPOINT_URL` | R2 endpoint (optional) |
-| `RTSP_CAM_*` | Expanded in YAML `${RTSP_CAM_PLAYGROUND}` |
+| `AWS_ACCESS_KEY_ID` / `AWS_SECRET_ACCESS_KEY` | R2 API keys |
+| `AWS_DEFAULT_REGION` | `auto` for Cloudflare R2 |
+| `AWS_ENDPOINT_URL` | R2 S3 endpoint URL |
 
-Bucket name is set in YAML `bucket:` (not env), unless you only use `--once` with defaults.
+Bucket name is set in YAML `bucket:`.

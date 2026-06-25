@@ -38,6 +38,19 @@ class CameraConfig:
     id: str
     name: str
     rtsp_url: str
+    always_on: bool = False
+    active_hours: ActiveHours | None = None  # per-camera override; else global
+
+
+def active_hours_for_camera(
+    cfg: CollectorConfig, camera: CameraConfig
+) -> ActiveHours | None:
+    """Effective schedule: always_on → 24/7; else camera override or global."""
+    if camera.always_on:
+        return None
+    if camera.active_hours is not None:
+        return camera.active_hours
+    return cfg.active_hours
 
 
 @dataclass(frozen=True)
@@ -65,6 +78,10 @@ def load_config(path: Path, *, dry_run: bool = False) -> CollectorConfig:
     if not cameras_raw:
         raise ValueError("config.cameras must list at least one camera")
 
+    spool = Path(str(raw.get("spool_dir") or "./spool")).expanduser()
+    default_tz = str(raw.get("active_hours_timezone") or "").strip() or None
+    active_hours = parse_active_hours(raw.get("active_hours"), default_tz=default_tz)
+
     cameras: list[CameraConfig] = []
     for i, c in enumerate(cameras_raw):
         if not isinstance(c, dict):
@@ -73,17 +90,26 @@ def load_config(path: Path, *, dry_run: bool = False) -> CollectorConfig:
         rtsp = str(c.get("rtsp_url", "")).strip()
         if not cam_id or not rtsp:
             raise ValueError(f"cameras[{i}] requires id and rtsp_url")
+        always_on = bool(c.get("always_on"))
+        cam_ah: ActiveHours | None = None
+        cam_ah_raw = c.get("active_hours")
+        if cam_ah_raw is not None:
+            if isinstance(cam_ah_raw, str) and cam_ah_raw.strip().lower() == "always":
+                always_on = True
+            elif not always_on:
+                tz = default_tz or (
+                    active_hours.timezone if active_hours is not None else None
+                )
+                cam_ah = parse_active_hours(cam_ah_raw, default_tz=tz)
         cameras.append(
             CameraConfig(
                 id=cam_id,
                 name=str(c.get("name") or cam_id).strip(),
                 rtsp_url=rtsp,
+                always_on=always_on,
+                active_hours=cam_ah,
             )
         )
-
-    spool = Path(str(raw.get("spool_dir") or "./spool")).expanduser()
-    default_tz = str(raw.get("active_hours_timezone") or "").strip() or None
-    active_hours = parse_active_hours(raw.get("active_hours"), default_tz=default_tz)
 
     return CollectorConfig(
         site_id=str(raw.get("site_id") or "site-unknown").strip(),

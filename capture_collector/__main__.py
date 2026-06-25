@@ -9,7 +9,7 @@ from pathlib import Path
 from threading import Event, Thread
 
 from .camera_worker import run_camera_worker
-from .config import CollectorConfig, load_config, single_camera_config
+from .config import CollectorConfig, active_hours_for_camera, load_config, single_camera_config
 from .uploader import (
     UploadJob,
     close_upload_queue,
@@ -54,7 +54,7 @@ def _run_collector(cfg: CollectorConfig) -> int:
     )
     logger.info(
         "starting site=%s cameras=%d interval=%ss spool=%s bucket=%s "
-        "active_hours=%s dry_run=%s",
+        "default_active_hours=%s dry_run=%s",
         cfg.site_id,
         len(cfg.cameras),
         cfg.sample_interval_sec,
@@ -63,6 +63,14 @@ def _run_collector(cfg: CollectorConfig) -> int:
         ah_msg,
         cfg.dry_run,
     )
+    for cam in cfg.cameras:
+        cam_ah = active_hours_for_camera(cfg, cam)
+        cam_msg = (
+            f"{cam_ah.label} ({cam_ah.timezone or 'local'})"
+            if cam_ah
+            else "always"
+        )
+        logger.info("camera %s (%s) active_hours=%s", cam.id, cam.name, cam_msg)
 
     uploaders = start_uploader_threads(
         cfg.bucket,

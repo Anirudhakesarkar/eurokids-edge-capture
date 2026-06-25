@@ -3,6 +3,7 @@ venv/
 __pycache__/
 *.pyc
 .env
+cameras.yaml
 spool/
 *.log
 .DS_Store
